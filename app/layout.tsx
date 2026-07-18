@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit, Orbitron } from "next/font/google";
+import { PortfolioProvider } from "@/context/PortfolioContext";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -15,8 +16,8 @@ const orbitron = Orbitron({
 });
 
 export const metadata: Metadata = {
-  title: "Orbitfolio | Interactive 3D Portfolio Universe",
-  description: "Step into Orbitfolio, an immersive 3D digital universe where career milestones are represented as glowing stars in a cinematic, cosmic space.",
+  title: "Orbitfolio | Interactive 3D Portfolio Universe SaaS",
+  description: "Create an interactive 3D digital universe where every milestone in your career is represented as a star. Share your cinematic 3D resume with recruiters.",
 };
 
 export default function RootLayout({
@@ -27,10 +28,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${outfit.variable} ${orbitron.variable} h-full overflow-hidden select-none bg-black text-white`}
+      className={`${outfit.variable} ${orbitron.variable} min-h-full bg-black text-white`}
     >
-      <body className="h-full w-full overflow-hidden bg-black antialiased">
-        {children}
+      <body className="min-h-full bg-black text-white antialiased">
+        <PortfolioProvider>{children}</PortfolioProvider>
       </body>
     </html>
   );
