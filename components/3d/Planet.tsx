@@ -14,18 +14,32 @@ interface PlanetProps {
 
 export default function Planet({ color, radius, hasRings, hovered, isActive }: PlanetProps) {
   const planetRef = useRef<THREE.Group>(null);
+  const coreRef = useRef<THREE.Mesh>(null);
   const atmosphereRef = useRef<THREE.Mesh>(null);
   const moonRef = useRef<THREE.Mesh>(null);
 
   useFrame((state, delta) => {
-    // Spin planet body
+    const elapsed = state.clock.getElapsedTime();
+
     if (planetRef.current) {
-      planetRef.current.rotation.y += delta * 0.15;
+      // 1. Slow automatic rotation combined with pointer coordinates tracking (cursor attraction)
+      const targetRotateX = state.pointer.y * 0.25;
+      const targetRotateY = (elapsed * 0.1) + (state.pointer.x * 0.3);
       
+      planetRef.current.rotation.x = THREE.MathUtils.lerp(planetRef.current.rotation.x, targetRotateX, 4 * delta);
+      planetRef.current.rotation.y = THREE.MathUtils.lerp(planetRef.current.rotation.y, targetRotateY, 4 * delta);
+      
+      // 2. Interpolate scale on hover or active selection
       const targetScale = isActive ? 1.6 : hovered ? 1.3 : 1.0;
       const currentScale = planetRef.current.scale.x;
       const lerpedScale = THREE.MathUtils.lerp(currentScale, targetScale, 6 * delta);
       planetRef.current.scale.set(lerpedScale, lerpedScale, lerpedScale);
+    }
+
+    // 3. Slow breathing pulse on the core planet scale
+    if (coreRef.current) {
+      const pulse = 1 + Math.sin(elapsed * 2.2) * 0.035;
+      coreRef.current.scale.set(pulse, pulse, pulse);
     }
 
     // Spin atmosphere shell in opposite direction
@@ -34,24 +48,23 @@ export default function Planet({ color, radius, hasRings, hovered, isActive }: P
       atmosphereRef.current.rotation.x += delta * 0.02;
     }
 
-    // Orbiting moon calculations
+    // Orbiting moon
     if (moonRef.current) {
-      const elapsed = state.clock.getElapsedTime() * 1.5;
-      const orbitRadius = radius * 1.9;
+      const orbitSpeed = elapsed * 1.6;
+      const orbitRadius = radius * 1.95;
       moonRef.current.position.set(
-        Math.cos(elapsed) * orbitRadius,
-        Math.sin(elapsed * 0.5) * (orbitRadius * 0.3), // inclined orbit
-        Math.sin(elapsed) * orbitRadius
+        Math.cos(orbitSpeed) * orbitRadius,
+        Math.sin(orbitSpeed * 0.5) * (orbitRadius * 0.25),
+        Math.sin(orbitSpeed) * orbitRadius
       );
-      // Spin the moon
-      moonRef.current.rotation.y += delta * 1.0;
+      moonRef.current.rotation.y += delta * 1.2;
     }
   });
 
   return (
     <group ref={planetRef}>
-      {/* 1. Solid Core Planet Sphere */}
-      <mesh>
+      {/* Solid Core Planet Sphere */}
+      <mesh ref={coreRef}>
         <sphereGeometry args={[radius, 32, 32]} />
         <meshStandardMaterial
           color={color}
@@ -62,7 +75,7 @@ export default function Planet({ color, radius, hasRings, hovered, isActive }: P
         />
       </mesh>
 
-      {/* 2. Technological Holographic wireframe atmosphere envelope */}
+      {/* Holographic wireframe atmosphere envelope */}
       <mesh ref={atmosphereRef} scale={[1.08, 1.08, 1.08]}>
         <sphereGeometry args={[radius, 14, 14]} />
         <meshBasicMaterial
@@ -74,7 +87,7 @@ export default function Planet({ color, radius, hasRings, hovered, isActive }: P
         />
       </mesh>
 
-      {/* 3. Orbiting moon Node */}
+      {/* Orbiting moon Node */}
       <mesh ref={moonRef}>
         <sphereGeometry args={[radius * 0.18, 8, 8]} />
         <meshStandardMaterial
@@ -86,7 +99,7 @@ export default function Planet({ color, radius, hasRings, hovered, isActive }: P
         />
       </mesh>
 
-      {/* 4. Saturn-like planar rings (Flat Circle) */}
+      {/* Planetary rings */}
       {hasRings && (
         <mesh rotation={[Math.PI / 2.6, 0, 0]}>
           <ringGeometry args={[radius * 1.35, radius * 2.1, 48]} />
@@ -102,7 +115,7 @@ export default function Planet({ color, radius, hasRings, hovered, isActive }: P
         </mesh>
       )}
 
-      {/* Point Light Source */}
+      {/* Emitted Point Light */}
       <pointLight
         color={color}
         intensity={isActive ? 6 : hovered ? 4 : 1.2}

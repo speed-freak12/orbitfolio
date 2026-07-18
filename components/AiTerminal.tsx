@@ -14,7 +14,7 @@ export default function AiTerminal({ onClose, onWarpToggle }: AiTerminalProps) {
   const [logs, setLogs] = useState<string[]>([
     "CONSTITUENT SCANNER: ACTIVE",
     "HOST GREETING RECOGNIZED. ACCESS GRANTED.",
-    "EXPLORER, WELCOME TO THE CAREERVERSE DIAGNOSTIC TERMINAL.",
+    "EXPLORER, WELCOME TO THE PORTFOLIO DIAGNOSTIC TERMINAL.",
     "TYPE 'help' TO DISCOVER COMMAND CODES."
   ]);
   const feedEndRef = useRef<HTMLDivElement>(null);
@@ -38,7 +38,7 @@ export default function AiTerminal({ onClose, onWarpToggle }: AiTerminalProps) {
       if (cmd === "help") {
         response = `AVAILABLE CODES:
   help       - Display terminal command codes list.
-  entities   - List all active CareerVerse stellar entities.
+  entities   - List all active PortFolio stellar entities.
   warp       - Engage/Disengage hyperdrive speed coordinates.
   clear      - Wipe terminal log screens.
   close      - Disconnect diagnostic terminal feed.`;

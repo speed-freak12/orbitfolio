@@ -16,7 +16,7 @@ const orbitron = Orbitron({
 });
 
 export const metadata: Metadata = {
-  title: "Orbitfolio | Interactive 3D Portfolio Universe SaaS",
+  title: "PortFolio | Interactive 3D Journey",
   description: "Create an interactive 3D digital universe where every milestone in your career is represented as a star. Share your cinematic 3D resume with recruiters.",
 };
 

@@ -26,20 +26,19 @@ function CameraController({ selectedEntity, viewMode, gameState, controlsRef }: 
     if (gameState === "landing") {
       pos.set(0, 0, 20);
     } else if (gameState === "entering") {
-      pos.set(0, 0, 0.42); // Zoom deep into origin core star
+      pos.set(0, 0, 0.42);
     } else {
       if (viewMode === "home") {
-        pos.set(0, 0, 5.0);
+        pos.set(0, 0, 4.8);
       } else if (viewMode === "universe") {
-        pos.set(0, 0, 11);
+        pos.set(0, 0, 10.5);
       } else if (viewMode === "recruiter") {
-        pos.set(-3.5, 0, 12);
+        pos.set(-3.2, 0, 11.5);
       } else if (viewMode === "contact") {
-        // Position camera to look directly at the satellite node
         const sat = careerEntities.find((e) => e.type === "satellite");
         if (sat) {
           const [sx, sy, sz] = sat.position;
-          pos.set(sx - 0.2, sy + 0.3, sz + 2.0);
+          pos.set(sx - 0.2, sy + 0.25, sz + 1.85);
         } else {
           pos.set(5.0, -2.5, 3.5);
         }
@@ -50,22 +49,23 @@ function CameraController({ selectedEntity, viewMode, gameState, controlsRef }: 
 
   useFrame((state, delta) => {
     const actualDelta = Math.min(delta, 0.1);
-    const lerpSpeed = gameState === "entering" ? 2.5 : 4.0;
+    
+    // Adjusted lerpSpeed from 4.0 to 2.6 for realistic fluid camera momentum (inertia)
+    const lerpSpeed = gameState === "entering" ? 2.5 : 2.6;
 
     if (gameState === "active" && selectedEntity) {
       const [mx, my, mz] = selectedEntity.position;
       
-      // Calculate specific zoom thresholds depending on entity type
       let cameraDistance = 2.0;
-      let heightOffset = 0.25;
+      let heightOffset = 0.22;
       
       if (selectedEntity.type === "planet") {
-        cameraDistance = (selectedEntity.radius || 0.3) * 4.8;
-        heightOffset = 0.15;
+        cameraDistance = (selectedEntity.radius || 0.3) * 4.6;
+        heightOffset = 0.12;
       } else if (selectedEntity.type === "station") {
-        cameraDistance = 1.95;
-      } else if (selectedEntity.type === "satellite") {
         cameraDistance = 1.85;
+      } else if (selectedEntity.type === "satellite") {
+        cameraDistance = 1.75;
       }
 
       const camTarget = new THREE.Vector3(mx, my + heightOffset, mz + cameraDistance);
@@ -81,7 +81,7 @@ function CameraController({ selectedEntity, viewMode, gameState, controlsRef }: 
       const centerTarget = new THREE.Vector3(0, 0, 0);
       if (gameState === "active") {
         if (viewMode === "recruiter") {
-          centerTarget.set(-2, 0, 0);
+          centerTarget.set(-2.0, 0, 0);
         } else if (viewMode === "contact") {
           const sat = careerEntities.find((e) => e.type === "satellite");
           if (sat) centerTarget.set(...sat.position);
@@ -98,7 +98,62 @@ function CameraController({ selectedEntity, viewMode, gameState, controlsRef }: 
   return null;
 }
 
-// Procedural visual components for Skill Orbs
+// Procedural Shooting Star streak
+function ShootingStar() {
+  const lineRef = useRef<any>(null);
+  const speed = 14;
+  const active = useRef(false);
+  const direction = useMemo(() => new THREE.Vector3(1.2, -0.4, 0.1).normalize(), []);
+  const startPos = useMemo(() => new THREE.Vector3(), []);
+
+  useFrame((state, delta) => {
+    if (!lineRef.current) return;
+    
+    if (!active.current) {
+      // Periodically spawn (0.4% chance per frame)
+      if (Math.random() < 0.004) {
+        active.current = true;
+        startPos.set(
+          (Math.random() - 0.5) * 20 - 6,
+          (Math.random() - 0.5) * 12 + 6,
+          (Math.random() - 0.5) * 15 - 5
+        );
+        lineRef.current.position.copy(startPos);
+        lineRef.current.visible = true;
+      } else {
+        lineRef.current.visible = false;
+      }
+    } else {
+      lineRef.current.position.addScaledVector(direction, speed * delta);
+      const mat = lineRef.current.material as THREE.LineBasicMaterial;
+      const dist = lineRef.current.position.distanceTo(startPos);
+      
+      // Fade out opacity after moving past 8 units
+      mat.opacity = Math.max(0, 1 - dist / 8.0);
+      
+      if (mat.opacity <= 0.02) {
+        active.current = false;
+        lineRef.current.visible = false;
+      }
+    }
+  });
+
+  const points = useMemo(() => [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.5, -0.16, 0.04)], []);
+
+  return (
+    <Line
+      ref={lineRef}
+      points={points}
+      color="#38bdf8"
+      lineWidth={1.5}
+      transparent
+      opacity={0}
+      blending={THREE.AdditiveBlending}
+    />
+  );
+}
+
+// Skill Orbs cell
 function TechOrbs({ color, hovered, isActive }: { color: string; hovered: boolean; isActive: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
   
@@ -116,7 +171,6 @@ function TechOrbs({ color, hovered, isActive }: { color: string; hovered: boolea
 
   return (
     <group ref={groupRef}>
-      {/* 1. Central glowing molecular energy nucleus */}
       <mesh>
         <dodecahedronGeometry args={[0.2, 1]} />
         <meshStandardMaterial
@@ -129,7 +183,6 @@ function TechOrbs({ color, hovered, isActive }: { color: string; hovered: boolea
         />
       </mesh>
       
-      {/* 2. Orbiting satellite energy particles */}
       <mesh position={[0.3, 0.25, -0.1]}>
         <sphereGeometry args={[0.035, 8, 8]} />
         <meshBasicMaterial color="#ffffff" toneMapped={false} />
@@ -153,7 +206,6 @@ function TechOrbs({ color, hovered, isActive }: { color: string; hovered: boolea
   );
 }
 
-// Interactive Entity Node wrapper
 interface EntityNodeProps {
   entity: CareerEntity;
   isActive: boolean;
@@ -181,13 +233,11 @@ function EntityNode({ entity, isActive, onClick, onSupernova }: EntityNodeProps)
 
     if (clickCount.current === 1) {
       doubleClickTimeout.current = setTimeout(() => {
-        // Single Click trigger
         onClick();
         clickCount.current = 0;
       }, 250);
     } else if (clickCount.current === 2) {
       clearTimeout(doubleClickTimeout.current);
-      // Double Click Supernova trigger
       onSupernova(entity.position, entity.color);
       clickCount.current = 0;
     }
@@ -195,7 +245,6 @@ function EntityNode({ entity, isActive, onClick, onSupernova }: EntityNodeProps)
 
   return (
     <group position={entity.position}>
-      {/* Click and Hover boundary box */}
       <mesh
         onPointerDown={handlePointerDown}
         onPointerOver={(e) => {
@@ -211,7 +260,6 @@ function EntityNode({ entity, isActive, onClick, onSupernova }: EntityNodeProps)
         <sphereGeometry args={[0.65, 16, 16]} />
       </mesh>
 
-      {/* Conditional 3D Mesh Assemblies */}
       {entity.type === "planet" && (
         <Planet
           color={entity.color}
@@ -248,7 +296,6 @@ function EntityNode({ entity, isActive, onClick, onSupernova }: EntityNodeProps)
 
       {entity.type === "constellation" && (
         <group>
-          {/* Wireframe locked constellation node */}
           <mesh>
             <octahedronGeometry args={[0.22]} />
             <meshStandardMaterial
@@ -262,7 +309,6 @@ function EntityNode({ entity, isActive, onClick, onSupernova }: EntityNodeProps)
         </group>
       )}
 
-      {/* Floating text name tag HUD */}
       <Html
         distanceFactor={6}
         position={[0, 0.5, 0]}
@@ -295,7 +341,7 @@ function EntityNode({ entity, isActive, onClick, onSupernova }: EntityNodeProps)
   );
 }
 
-// Background stars modifier incorporating Warp Speed vector stretch
+// Background stars with twinkling oscillations
 function BackgroundStars({ gameState, warpActive }: { gameState: string; warpActive: boolean }) {
   const pointsRef = useRef<THREE.Points>(null);
   const count = 1500;
@@ -322,8 +368,6 @@ function BackgroundStars({ gameState, warpActive }: { gameState: string; warpAct
     if (pointsRef.current) {
       const geo = pointsRef.current.geometry;
       const posAttr = geo.attributes.position;
-      
-      // Accelerate stars forward during Warp Speed activation
       const speed = warpActive ? 42.0 : gameState === "entering" ? 8.0 : 0.35;
 
       if (posAttr) {
@@ -331,7 +375,6 @@ function BackgroundStars({ gameState, warpActive }: { gameState: string; warpAct
           let z = posAttr.getZ(i);
           z += speed * delta;
           
-          // Re-spawn far behind camera once passed
           if (z > 22) {
             z = -25;
             posAttr.setX(i, (Math.random() - 0.5) * 40);
@@ -342,8 +385,15 @@ function BackgroundStars({ gameState, warpActive }: { gameState: string; warpAct
         posAttr.needsUpdate = true;
       }
       
-      // Slow orbital rotate
       pointsRef.current.rotation.y += delta * 0.01;
+
+      // Twinkling amplitude modulation using sine waves over clocks
+      const mat = pointsRef.current.material as THREE.PointsMaterial;
+      if (mat && !warpActive) {
+        mat.opacity = 0.55 + Math.sin(state.clock.getElapsedTime() * 3.5) * 0.15;
+      } else if (mat && warpActive) {
+        mat.opacity = 0.95;
+      }
     }
   });
 
@@ -364,7 +414,7 @@ function BackgroundStars({ gameState, warpActive }: { gameState: string; warpAct
         sizeAttenuation={true}
         vertexColors
         transparent
-        opacity={warpActive ? 0.95 : 0.7}
+        opacity={0.7}
         depthWrite={false}
         blending={THREE.AdditiveBlending}
       />
@@ -372,7 +422,6 @@ function BackgroundStars({ gameState, warpActive }: { gameState: string; warpAct
   );
 }
 
-// Soft drifting nebula points
 function NebulaDust() {
   const pointsRef = useRef<THREE.Points>(null);
   const count = 250;
@@ -426,7 +475,6 @@ function NebulaDust() {
   );
 }
 
-// Origin Energy Core expanding reveal
 function CentralOriginStar({ gameState }: { gameState: string }) {
   const meshRef = useRef<THREE.Mesh>(null);
 
@@ -467,10 +515,8 @@ function CentralOriginStar({ gameState }: { gameState: string }) {
   );
 }
 
-// Locked constellation lines connecting nodes
 function ConstellationLines({ visible }: { visible: boolean }) {
   const points = useMemo(() => {
-    // Exclude origin star at 0,0,0 for nice constellation outline
     return careerEntities
       .filter((e) => e.type !== "star")
       .map((e) => new THREE.Vector3(...e.position));
@@ -514,20 +560,19 @@ export default function UniverseCanvas({
       <Canvas
         camera={{ position: [0, 0, 20], fov: 60, near: 0.1, far: 100 }}
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+        // Clicking in empty canvas space triggers fly-back (selection reset)
+        onPointerMissed={() => onEntitySelect(null)}
       >
         <ambientLight intensity={0.4} />
         <pointLight position={[10, 15, 10]} intensity={1.5} />
         <directionalLight position={[-5, 5, -5]} intensity={0.5} />
 
-        {/* Dynamic Star fields and Nebulas */}
         <BackgroundStars gameState={gameState} warpActive={warpActive} />
         <NebulaDust />
         <ConstellationLines visible={gameState === "active"} />
 
-        {/* Glowing Origin Core */}
         <CentralOriginStar gameState={gameState} />
 
-        {/* Procedural Career Objects */}
         {gameState === "active" &&
           careerEntities.map((entity) => (
             <EntityNode
@@ -539,7 +584,14 @@ export default function UniverseCanvas({
             />
           ))}
 
-        {/* Dynamic Supernova Shockwaves */}
+        {/* Dynamic shooting stars flashing periodically */}
+        {gameState === "active" && (
+          <>
+            <ShootingStar />
+            <ShootingStar />
+          </>
+        )}
+
         {supernovas.map((s) => (
           <SupernovaParticles
             key={s.id}
@@ -549,7 +601,6 @@ export default function UniverseCanvas({
           />
         ))}
 
-        {/* Camera flying coordinates controller */}
         <CameraController
           selectedEntity={selectedEntity}
           viewMode={viewMode}
@@ -557,7 +608,6 @@ export default function UniverseCanvas({
           controlsRef={controlsRef}
         />
 
-        {/* Orbit Interaction */}
         <OrbitControls
           ref={controlsRef}
           enableDamping

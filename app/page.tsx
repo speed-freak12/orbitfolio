@@ -9,6 +9,7 @@ import HolographicHud from "@/components/HolographicHud";
 import AiTerminal from "@/components/AiTerminal";
 import ContactPanel from "@/components/ContactPanel";
 import { CareerEntity, careerEntities } from "@/data/milestones";
+import { sound } from "@/utils/sound";
 
 export default function Home() {
   const [gameState, setGameState] = useState<"landing" | "entering" | "active">("landing");
@@ -39,6 +40,13 @@ export default function Home() {
         setWarpActive(true);
       }
 
+      // Escape key return trigger
+      if (e.code === "Escape" && gameState === "active") {
+        e.preventDefault();
+        setSelectedEntity(null);
+        sound.playReturn();
+      }
+
       // Check for typing 'hello'
       keyBuffer += e.key.toLowerCase();
       if (keyBuffer.length > 15) {
@@ -46,6 +54,7 @@ export default function Home() {
       }
       if (keyBuffer.endsWith("hello")) {
         setShowAiTerminal(true);
+        sound.playSelect();
         keyBuffer = "";
       }
     };
@@ -67,6 +76,8 @@ export default function Home() {
 
   const handleEnterUniverse = () => {
     setGameState("entering");
+    sound.playClick();
+    sound.playAmbient(); // start low-hum space drone synth
     // Wait for camera flight zoom inside star core to finish
     setTimeout(() => {
       setGameState("active");
@@ -77,16 +88,20 @@ export default function Home() {
   const handleViewChange = (newView: "home" | "universe" | "recruiter" | "contact") => {
     setViewMode(newView);
     setSelectedEntity(null);
+    sound.playSelect();
   };
 
   const handleEntitySelect = (entity: CareerEntity | null) => {
     setSelectedEntity(entity);
     if (entity) {
+      sound.playSelect();
       if (entity.type === "satellite") {
         setViewMode("contact");
       } else {
         setViewMode("universe");
       }
+    } else {
+      sound.playReturn();
     }
   };
 
