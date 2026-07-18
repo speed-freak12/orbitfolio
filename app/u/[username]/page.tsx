@@ -52,10 +52,11 @@ export default function UserPortfolioPage({ params }: PageProps) {
     <main className="relative w-full h-full min-h-screen bg-black overflow-hidden select-none font-sans text-white">
       {/* 3D Canvas Engine using milestones from context */}
       <UniverseCanvas
-        selectedMilestone={selectedMilestone}
-        onMilestoneSelect={handleMilestoneSelect}
+        selectedEntity={selectedMilestone}
+        onEntitySelect={handleMilestoneSelect}
         viewMode={viewMode}
         gameState="active"
+        warpActive={false}
       />
 
       {/* Main UI Overlays */}

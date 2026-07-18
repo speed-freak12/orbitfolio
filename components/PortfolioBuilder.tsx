@@ -59,6 +59,7 @@ export default function PortfolioBuilder() {
 
     addMilestone({
       id,
+      type: "planet",
       title,
       subtitle,
       date,
@@ -258,10 +259,11 @@ export default function PortfolioBuilder() {
       <div className="lg:col-span-6 flex flex-col h-[340px] lg:h-auto min-h-[340px] relative rounded-3xl border border-white/10 overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.7)] bg-black">
         {/* Real-time Universe Canvas */}
         <UniverseCanvas
-          selectedMilestone={selectedMilestone}
-          onMilestoneSelect={setSelectedMilestone}
+          selectedEntity={selectedMilestone}
+          onEntitySelect={setSelectedMilestone}
           viewMode="universe"
           gameState="active"
+          warpActive={false}
         />
 
         {/* Dynamic Detail Card Drawer overlay */}
